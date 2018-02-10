@@ -11,6 +11,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.soywiz.io.ktor</groupId>
+            <artifactId>ktor-client-cio-mysql</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
             <groupId>org.jetbrains.squash</groupId>
             <artifactId>squash-core</artifactId>
             <version>${project.version}</version>
