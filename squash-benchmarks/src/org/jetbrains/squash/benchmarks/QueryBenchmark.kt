@@ -11,13 +11,13 @@ import org.jetbrains.squash.results.*
 import org.jetbrains.squash.statements.*
 import org.openjdk.jmh.annotations.*
 
-object LoadTable : TableDefinition() {
+object BenchmarkTable : TableDefinition() {
     val id = integer("id").autoIncrement().primaryKey()
     val name = varchar("name", 20)
     val value = integer("value").index()
 }
 
-interface Load {
+interface Data {
     val name: String
     val value: Int
 }
@@ -25,21 +25,21 @@ interface Load {
 @State(Scope.Benchmark)
 abstract class QueryBenchmark {
     private val rows = 100000
-    lateinit private var transaction: Transaction
+    lateinit private var connection: DatabaseConnection
 
-    abstract fun createTransaction(): Transaction
+    abstract fun createConnection(): DatabaseConnection
 
     @Setup
     fun setup() {
-        transaction = createTransaction()
+        connection = createConnection()
 
         withTransaction {
             connection.monitor.before {
                 //println(it)
             }
-            databaseSchema().create(listOf(LoadTable))
+            databaseSchema().create(listOf(BenchmarkTable))
             repeat(rows) { seq ->
-                insertInto(LoadTable).values {
+                insertInto(BenchmarkTable).values {
                     it[name] = "$seq-value"
                     it[value] = seq
                 }.execute()
@@ -50,16 +50,25 @@ abstract class QueryBenchmark {
 
     @TearDown
     fun teardown() {
-        transaction.close()
+        connection.close()
     }
 
-    fun <R> withTransaction(body: suspend Transaction.() -> R): R = runBlocking { body(transaction) }
-    fun <R> withJDBCTransaction(body: suspend JDBCTransaction.() -> R): R = runBlocking { body(transaction as JDBCTransaction) }
+    fun <R> withTransaction(body: suspend Transaction.() -> R): R = runBlocking {
+        connection.createTransaction().use {
+            body(it)
+        }
+    }
+
+    fun <R> withJDBCTransaction(body: suspend JDBCTransaction.() -> R): R = runBlocking {
+        connection.createTransaction().use {
+            body(it as JDBCTransaction)
+        }
+    }
 
 
     @Benchmark
     fun iterateJdbc() = withJDBCTransaction {
-        val resultSet = jdbcTransaction.prepareStatement("SELECT * FROM Load").executeQuery()
+        val resultSet = jdbcTransaction.prepareStatement("SELECT * FROM Benchmark").executeQuery()
         var sum = 0
         val index = resultSet.findColumn("value")
         while (resultSet.next()) {
@@ -70,7 +79,7 @@ abstract class QueryBenchmark {
 
     @Benchmark
     fun iterateJdbcObject() = withJDBCTransaction {
-        val resultSet = jdbcTransaction.prepareStatement("SELECT * FROM Load").executeQuery()
+        val resultSet = jdbcTransaction.prepareStatement("SELECT * FROM Benchmark").executeQuery()
         var sum = 0
         val index = resultSet.findColumn("value")
         while (resultSet.next()) {
@@ -81,7 +90,7 @@ abstract class QueryBenchmark {
 
     @Benchmark
     fun iterateJdbcName() = withJDBCTransaction {
-        val resultSet = jdbcTransaction.prepareStatement("SELECT * FROM Load").executeQuery()
+        val resultSet = jdbcTransaction.prepareStatement("SELECT * FROM Benchmark").executeQuery()
         var sum = 0
         while (resultSet.next()) {
             sum += resultSet.getInt("value")
@@ -91,21 +100,21 @@ abstract class QueryBenchmark {
 
     @Benchmark
     fun iterateQuery() = withTransaction {
-        val query = from(LoadTable).select(LoadTable.name, LoadTable.value)
+        val query = from(BenchmarkTable).select(BenchmarkTable.name, BenchmarkTable.value)
         val response = query.execute()
-        response.sumBy { it.columnValue(LoadTable.value) }
+        response.sumBy { it.columnValue(BenchmarkTable.value) }
     }
 
     @Benchmark
     fun iterateQueryWhere() = withTransaction {
-        val query = from(LoadTable).select(LoadTable.name, LoadTable.value).where { LoadTable.value gt (rows / 2) }
+        val query = from(BenchmarkTable).select(BenchmarkTable.name, BenchmarkTable.value).where { BenchmarkTable.value gt (rows / 2) }
         val response = query.execute()
-        response.sumBy { it.columnValue(LoadTable.value) }
+        response.sumBy { it.columnValue(BenchmarkTable.value) }
     }
 
     @Benchmark
     fun iterateMapping() = withTransaction {
-        val query = from(LoadTable).select(LoadTable.name, LoadTable.value).bind<Load>(LoadTable)
+        val query = from(BenchmarkTable).select(BenchmarkTable.name, BenchmarkTable.value).bind<Data>(BenchmarkTable)
         val response = query.execute()
         response.sumBy { it.value }
     }

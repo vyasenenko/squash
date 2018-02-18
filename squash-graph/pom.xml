@@ -19,6 +19,7 @@
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
+            <!--<version>1.7.10</version>-->
             <version>1.4.22</version>
         </dependency>
         <dependency>

@@ -11,11 +11,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.soywiz.io.ktor</groupId>
-            <artifactId>ktor-client-cio-mysql</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
-        <dependency>
             <groupId>org.jetbrains.squash</groupId>
             <artifactId>squash-core</artifactId>
             <version>${project.version}</version>
@@ -35,7 +30,7 @@
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>5.1.39</version>
+            <version>6.0.6</version>
         </dependency>
 
         <!-- TEST -->
@@ -50,7 +45,7 @@
         <dependency>
             <groupId>com.wix</groupId>
             <artifactId>wix-embedded-mysql</artifactId>
-            <version>2.1.4</version>
+            <version>4.0.0</version>
             <scope>test</scope>
         </dependency>
 
