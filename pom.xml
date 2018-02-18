@@ -101,7 +101,12 @@
                 <artifactId>kotlin-maven-plugin</artifactId>
                 <version>${kotlin.version}</version>
 
-                <configuration><args><arg>-Xallow-kotlin-package</arg></args></configuration>
+                <configuration>
+                    <args>
+                        <arg>-Xcoroutines=enable</arg>
+                        <arg>-Xallow-kotlin-package</arg>
+                    </args>
+                </configuration>
 
                 <executions>
                     <execution>

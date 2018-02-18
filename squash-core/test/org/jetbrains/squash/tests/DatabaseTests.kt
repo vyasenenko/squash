@@ -14,16 +14,16 @@ interface DatabaseTests {
     fun autoPrimaryKey(table: String, column: String): String
 
     fun createConnection(): DatabaseConnection
-    fun createTransaction(): Transaction = createConnection().createTransaction()
+    suspend fun createTransaction(): Transaction = createConnection().createTransaction()
 
-    fun <R> withTables(vararg tables: TableDefinition, statement: suspend Transaction.() -> R): R = withTransaction {
-        runBlocking {
+    fun <R> withTables(vararg tables: TableDefinition, statement: suspend Transaction.() -> R): R = runBlocking {
+        withTransaction {
             databaseSchema().create(tables.toList())
             statement()
         }
     }
 
-    fun <R> withTransaction(statement: suspend Transaction.() -> R): R = createTransaction().use { runBlocking { statement(it) } }
+    fun <R> withTransaction(statement: suspend Transaction.() -> R): R = runBlocking { createTransaction().use { statement(it) } }
 
     fun List<SQLStatement>.assertSQL(text: () -> String) {
         val sql = joinToString("\n") { it.sql }
