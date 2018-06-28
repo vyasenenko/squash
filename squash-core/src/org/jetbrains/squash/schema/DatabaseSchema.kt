@@ -24,6 +24,8 @@ interface DatabaseSchema {
     interface SchemaColumn {
         val name: String
         val nullable: Boolean
+        val type: String
+        val size: Int?
     }
 }
 

@@ -8,7 +8,7 @@
     <version>0.2.5-SNAPSHOT</version>
 
     <properties>
-        <kotlin.version>1.2.21</kotlin.version>
+        <kotlin.version>1.2.50</kotlin.version>
         <dokka.version>0.9.15</dokka.version>
     </properties>
 

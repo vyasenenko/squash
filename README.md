@@ -16,6 +16,11 @@ Squash is a data access and manipulation DSL library for relational databases.
   Dialect, responsible for building relevant SQL statements and queries, can be overriden or replaced to support specific SQL language variants.
 * *Kotlin*.
 
+
+This fork optimized for postgres
+-------------
+Appended functions for append, rename, change type, change size columns 
+
 Quick Samples
 -------------
 

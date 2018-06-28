@@ -1,8 +1,9 @@
 package org.jetbrains.squash.schema
 
-import org.jetbrains.squash.connection.*
-import org.jetbrains.squash.definition.*
-import org.jetbrains.squash.dialect.*
+import org.jetbrains.squash.connection.Transaction
+import org.jetbrains.squash.definition.Table
+import org.jetbrains.squash.definition.TableDefinition
+import org.jetbrains.squash.dialect.SQLStatement
 
 abstract class DatabaseSchemaBase(open val transaction: Transaction) : DatabaseSchema {
 
@@ -30,6 +31,7 @@ abstract class DatabaseSchemaBase(open val transaction: Transaction) : DatabaseS
         }
         for (table in tables) {
             statements.addAll(definition.foreignKeys(table))
+            statements.addAll(definition.alterTable(table, existingTables))
         }
         return statements
     }

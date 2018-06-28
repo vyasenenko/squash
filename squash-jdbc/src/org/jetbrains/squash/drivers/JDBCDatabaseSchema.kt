@@ -1,8 +1,9 @@
 package org.jetbrains.squash.drivers
 
-import org.jetbrains.squash.results.*
-import org.jetbrains.squash.schema.*
-import java.sql.*
+import org.jetbrains.squash.results.get
+import org.jetbrains.squash.schema.DatabaseSchema
+import org.jetbrains.squash.schema.DatabaseSchemaBase
+import java.sql.DatabaseMetaData
 
 open class JDBCDatabaseSchema(final override val transaction: JDBCTransaction) : DatabaseSchemaBase(transaction) {
     protected val catalogue: String? = transaction.jdbcTransaction.catalog
@@ -16,8 +17,10 @@ open class JDBCDatabaseSchema(final override val transaction: JDBCTransaction) :
     protected open fun currentSchema(): String = transaction.jdbcTransaction.schema ?: ""
 
     class SchemaColumn(override val name: String,
-                       override val nullable: Boolean) : DatabaseSchema.SchemaColumn {
-        override fun toString(): String = "[JDBC] Column: $name"
+                       override val nullable: Boolean,
+                       override val type: String,
+                       override val size: Int?) : DatabaseSchema.SchemaColumn {
+        override fun toString(): String = "[JDBC] Column: $name:$type${if (nullable) "?" else ""} ($size)"
     }
 
     class SchemaTable(override val name: String, private val schema: JDBCDatabaseSchema) : DatabaseSchema.SchemaTable {
@@ -25,9 +28,8 @@ open class JDBCDatabaseSchema(final override val transaction: JDBCTransaction) :
             val resultSet = schema.metadata.getColumns(schema.catalogue, schema.currentSchema(), name, null)
             val response = JDBCResponse(schema.transaction.connection.conversion, resultSet)
             return response.rows.map {
-                val columnName = it.get<String>("COLUMN_NAME")
-                val nullable = it.get<Int>("NULLABLE") == DatabaseMetaData.columnNullable
-                SchemaColumn(columnName, nullable)
+                SchemaColumn(it["COLUMN_NAME"], it.get<Int>("NULLABLE") == DatabaseMetaData.columnNullable,
+                        it["TYPE_NAME"], it.get<Int>("COLUMN_SIZE"))
             }
         }
 
