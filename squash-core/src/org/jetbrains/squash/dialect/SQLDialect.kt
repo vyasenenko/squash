@@ -6,7 +6,10 @@ import org.jetbrains.squash.query.*
 import org.jetbrains.squash.statements.*
 
 interface SQLDialect {
+
     val definition: DefinitionSQLDialect
+
+    val columnTypes : Map<String, ColumnTypeDB>
 
     fun nameSQL(name: Name): String
     fun idSQL(name: Name): String

@@ -4,6 +4,10 @@ import org.jetbrains.squash.definition.*
 import org.jetbrains.squash.dialect.*
 
 object PgDialect : BaseSQLDialect("Postgres") {
+
+    override val columnTypes
+        get() = PgTypes.values().associateBy { it.name }
+
     override val definition: DefinitionSQLDialect = object : BaseDefinitionSQLDialect(this) {
         override fun columnTypeSQL(builder: SQLStatementBuilder, column: Column<*>) {
             if (column.hasProperty<AutoIncrementProperty>()) {
@@ -20,10 +24,6 @@ object PgDialect : BaseSQLDialect("Postgres") {
 
         override fun columnAutoIncrementProperty(builder: SQLStatementBuilder, property: AutoIncrementProperty?) {
             // do nothing, we already handled AutoIncrementProperty as SERIAL
-        }
-
-        override fun columnPropertiesSQL(builder: SQLStatementBuilder, column: Column<*>) {
-            super.columnPropertiesSQL(builder, column)
         }
 
         override fun columnTypeSQL(builder: SQLStatementBuilder, type: ColumnType) {

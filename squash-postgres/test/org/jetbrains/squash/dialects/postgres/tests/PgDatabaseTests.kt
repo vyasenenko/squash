@@ -21,8 +21,9 @@ class PgDatabaseTests : DatabaseTests {
     override fun primaryKey(name: String, vararg column: String): String = ", CONSTRAINT PK_$name PRIMARY KEY (${column.joinToString()})"
     override fun autoPrimaryKey(table: String, column: String): String = primaryKey(table, column)
 
-    override fun createConnection() = PgConnection.create(pgUrl)
+//    override fun createConnection() = PgConnection.create(pgUrl)
+    override fun createConnection() = PgConnection.create("localhost:5432/test", "postgres", "12345")
     override fun createTransaction() = createConnection().createTransaction().apply {
-        executeStatement("SET search_path TO pg_temp")
+//        executeStatement("SET search_path TO pg_temp")
     }
 }

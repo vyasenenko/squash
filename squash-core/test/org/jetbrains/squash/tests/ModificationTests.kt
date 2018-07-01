@@ -8,11 +8,13 @@ import org.jetbrains.squash.tests.data.*
 import kotlin.test.*
 
 abstract class ModificationTests : DatabaseTests {
-    @Test fun testBuildTestData() {
+    @Test
+    fun testBuildTestData() {
         withCities {}
     }
 
-    @Test fun updateSingleRow() {
+    @Test
+    fun updateSingleRow() {
         withCities {
             val alexId = "alex"
             val oldName = "Alex"
@@ -33,7 +35,8 @@ abstract class ModificationTests : DatabaseTests {
         }
     }
 
-    @Test fun deleteAll() {
+    @Test
+    fun deleteAll() {
         withCities {
             deleteFrom(CitizenDataLink).execute()
             deleteFrom(CitizenData).execute()
@@ -42,11 +45,12 @@ abstract class ModificationTests : DatabaseTests {
         }
     }
 
-    @Test fun deleteWhereLike() {
+    @Test
+    fun deleteWhereLike() {
         withCities {
             val query = select(Citizens.id).from(Citizens).where { Citizens.name like "%thing" }
             val smthId = query.execute().single()[Citizens.id]
-            assertEquals ("smth", smthId)
+            assertEquals("smth", smthId)
 
             deleteFrom(CitizenDataLink).where { CitizenDataLink.citizen_id like "smth" }.execute()
             deleteFrom(Citizens).where { Citizens.name like "%thing" }.execute()

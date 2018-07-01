@@ -1,5 +1,6 @@
 package org.jetbrains.squash.schema
 
+import org.jetbrains.squash.change.ChangeLogController
 import org.jetbrains.squash.connection.Transaction
 import org.jetbrains.squash.definition.Table
 import org.jetbrains.squash.definition.TableDefinition
@@ -7,10 +8,21 @@ import org.jetbrains.squash.dialect.SQLStatement
 
 abstract class DatabaseSchemaBase(open val transaction: Transaction) : DatabaseSchema {
 
+    override val alterTable: Boolean = true
+
+    override val changeLogController: ChangeLogController
+        get() = ChangeLogController(transaction)
+
     override fun create(tables: List<TableDefinition>) {
-        val statements = createStatements(tables)
-        for (statement in statements) {
-            transaction.executeStatement(statement)
+        createStatements(tables).forEach {
+            transaction.executeStatement(it)
+        }
+    }
+
+    override fun drop(tables: List<TableDefinition>) {
+        val definition = transaction.connection.dialect.definition
+        tables.forEach {
+            transaction.executeStatement(definition.drop(it))
         }
     }
 
@@ -20,6 +32,7 @@ abstract class DatabaseSchemaBase(open val transaction: Transaction) : DatabaseS
             return statements
 
         val definition = transaction.connection.dialect.definition
+        val constrains = definition.constrains(transaction)
 
         val existingTables = tables().toList()
         for (table in tables) {
@@ -30,8 +43,9 @@ abstract class DatabaseSchemaBase(open val transaction: Transaction) : DatabaseS
             statements.addAll(tableDefinition)
         }
         for (table in tables) {
-            statements.addAll(definition.foreignKeys(table))
-            statements.addAll(definition.alterTable(table, existingTables))
+            statements.addAll(definition.foreignKeys(table, constrains))
+            if (alterTable)
+                statements.addAll(definition.alterTable(table, existingTables))
         }
         return statements
     }
@@ -53,9 +67,6 @@ abstract class DatabaseSchemaBase(open val transaction: Transaction) : DatabaseS
                     when {
                         columnSchema == null -> validationResult.add(DatabaseSchema.DatabaseSchemaValidationItem("Column schema not found for definition column '$columnDefinition in table '$tableSchema'"))
                         columnDefinition == null -> validationResult.add(DatabaseSchema.DatabaseSchemaValidationItem("Column definition not found for schema column '$columnSchema' in table '$tableDefinition'"))
-                        else -> {
-
-                        }
                     }
                 }
             }

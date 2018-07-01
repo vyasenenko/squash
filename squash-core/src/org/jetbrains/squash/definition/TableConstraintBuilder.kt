@@ -29,7 +29,7 @@ fun <V> ColumnDefinition<V>.primaryKey(pkName: String? = null) = apply {
 
 fun Table.primaryKey(vararg columns: ColumnDefinition<*>, name: String? = null) {
     val indexName = name ?: "PK_${compoundName.id}_${columns.joinToString("_") { it.name.id }}"
-    check(constraints.primaryKey == null) {
+    check(constraints.primaryKey != null) {
         "Cannot set primary key to $indexName because it was already created for table `$this`"
     }
     constraints.primaryKey = PrimaryKeyConstraint(Identifier(indexName), columns.toList())

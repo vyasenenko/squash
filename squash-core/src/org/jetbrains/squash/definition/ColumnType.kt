@@ -13,6 +13,11 @@ abstract class ColumnType(val runtimeType: KClass<*>) {
     override fun toString(): String = javaClass.simpleName.removeSuffix("ColumnType")
 }
 
+interface ColumnTypeDB {
+    val name: String
+    val classes: List<KClass<out ColumnType>>
+}
+
 object IntColumnType : ColumnType(Int::class)
 object LongColumnType : ColumnType(Long::class)
 object DateColumnType : ColumnType(LocalDate::class)
@@ -20,10 +25,6 @@ object DateTimeColumnType : ColumnType(LocalDateTime::class)
 object BlobColumnType : ColumnType(BinaryObject::class)
 object BooleanColumnType : ColumnType(Boolean::class)
 object UUIDColumnType : ColumnType(UUID::class)
-
-class NullableColumnType(val columnType: ColumnType) : ColumnType(columnType.runtimeType) {
-    override fun toString(): String = "$columnType?"
-}
 
 class DecimalColumnType(val scale: Int, val precision: Int) : ColumnType(BigDecimal::class) {
     override fun toString(): String = "Decimal($scale.$precision)"

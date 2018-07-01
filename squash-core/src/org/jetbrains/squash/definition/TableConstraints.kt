@@ -27,4 +27,3 @@ class ForeignKeyConstraint(override val name: Name, val sources: List<ColumnDefi
 class IndexConstraint(override val name: Name, val columns: List<ColumnDefinition<*>>, val unique: Boolean) : TableConstraint {
     override fun toString(): String = if (unique) "[UIX] $columns" else "[IX] $columns"
 }
-

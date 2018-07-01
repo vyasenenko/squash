@@ -2,10 +2,11 @@ package org.jetbrains.squash.dialect
 
 import org.jetbrains.squash.connection.Transaction
 import org.jetbrains.squash.definition.*
+import org.jetbrains.squash.expressions.Loggable
 import org.jetbrains.squash.results.get
 import org.jetbrains.squash.schema.DatabaseSchema
 
-open class BaseDefinitionSQLDialect(val dialect: SQLDialect) : DefinitionSQLDialect {
+open class BaseDefinitionSQLDialect(val dialect: SQLDialect) : DefinitionSQLDialect, Loggable {
 
     override fun tableSQL(table: TableDefinition): List<SQLStatement> {
         val tableSQL = SQLStatementBuilder().apply {
@@ -25,6 +26,92 @@ open class BaseDefinitionSQLDialect(val dialect: SQLDialect) : DefinitionSQLDial
         val indices = indicesSQL(table)
         return listOf(tableSQL) + indices
     }
+
+    override fun foreignKeys(table: TableDefinition, constrains: List<String>): List<SQLStatement> =
+            table.constraints.elements.filterIsInstance<ForeignKeyConstraint>()
+                    .mapNotNull { key ->
+                        if (constrains.contains(key.name.id.toLowerCase())) {
+                            null
+                        } else {
+                            SQLStatementBuilder().apply {
+                                alterTable(table)
+                                append("ADD ")
+                                appendForeignKey(this, key)
+                            }.build()
+                        }
+                    }
+
+    override fun alterTable(table: TableDefinition, schemas: List<DatabaseSchema.SchemaTable>): List<SQLStatement> {
+        val existTable = schemas.associateBy { it.name.toLowerCase() }
+        val nameSQL = dialect.nameSQL(table.compoundName).toLowerCase()
+        val exist = existTable[nameSQL]
+        return if (exist != null) {
+            table.compoundColumns.mapNotNull { column ->
+                val find = exist.columns().find { column.name.identifier.id.toLowerCase() == it.name.toLowerCase() }
+
+                if (find == null) {
+                    SQLStatementBuilder().apply {
+                        val renameColumnProperty = column.propertyOrNull<RenameColumnProperty>()
+                        when (renameColumnProperty) {
+                            null -> {
+                                alterTable(table)
+                                append("ADD COLUMN ")
+                                append(dialect.idSQL(column.name))
+                                append(" ")
+                                columnTypeSQL(this, column)
+                                columnPropertiesSQL(this, column)
+                                "Added column $column".log()
+                            }
+                            else -> {
+                                alterTable(table)
+                                append("RENAME COLUMN ")
+                                append("${dialect.idSQL(Identifier(renameColumnProperty.oldName))} TO ${dialect.idSQL(column.name)}")
+                                "Renamed column $column from ${renameColumnProperty.oldName}".log()
+                            }
+                        }
+                    }.build()
+                } else {
+                    val columnTypeDB = dialect.columnTypes[find.type]
+                            ?: error("This ${find.type} column type db not support in DSL")
+                    val columnType = column.type
+                    when {
+                        !columnTypeDB.classes.contains(columnType::class) -> {
+                            SQLStatementBuilder().apply {
+                                alterTable(table)
+                                append("ALTER COLUMN ${find.name} TYPE ")
+                                columnTypeSQL(this, column)
+                                if (listOf(IntColumnType::class,
+                                                LongColumnType::class,
+                                                EnumColumnType::class).contains(columnType::class)) {
+                                    append(" USING ${find.name}::")
+                                    columnTypeSQL(this, column)
+                                }
+                                "Changed type $find to $column".log()
+                            }.build()
+                        }
+                        find.type == "varchar" && columnType is StringColumnType && columnType.length != find.size ->
+                            SQLStatementBuilder().apply {
+                                alterTable(table)
+                                append("ALTER COLUMN ${find.name} TYPE ")
+                                columnTypeSQL(this, column)
+                                "Changed size $find to $column".log()
+                            }.build()
+                        else -> null
+                    }
+                }
+            }
+
+        } else emptyList()
+    }
+
+    override fun constrains(transaction: Transaction): List<String> = transaction.executeStatement(SQLStatement("""
+			|SELECT tc.constraint_name, tc.table_name, kcu.column_name, ccu.table_name AS foreign_table_name, ccu.column_name AS foreign_column_name
+			|FROM information_schema.table_constraints AS tc
+    		|JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name
+    		|JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name
+			|WHERE constraint_type = 'FOREIGN KEY'
+		""".trimMargin().replace("\n", " "), emptyList()))
+            .toList().map { (it["constraint_name"] ?: "").toLowerCase() }.filter { it.isNotBlank() }
 
     protected open fun indicesSQL(table: TableDefinition): List<SQLStatement> =
             table.constraints.elements.filterIsInstance<IndexConstraint>().map {
@@ -61,59 +148,16 @@ open class BaseDefinitionSQLDialect(val dialect: SQLDialect) : DefinitionSQLDial
     protected open fun primaryKeyDefinitionSQL(builder: SQLStatementBuilder, key: PrimaryKeyConstraint, table: Table) = with(builder) {
         append(", ")
         append("CONSTRAINT ${dialect.idSQL(key.name)} PRIMARY KEY (")
-        append(key.columns.map { dialect.idSQL(it.name) }.joinToString())
+        append(key.columns.joinToString { dialect.idSQL(it.name) })
         append(")")
-    }
-
-    override fun foreignKeys(table: TableDefinition): List<SQLStatement> = table.constraints.elements.filterIsInstance<ForeignKeyConstraint>()
-            .map { key ->
-                SQLStatementBuilder().apply {
-                    append("ALTER TABLE ${dialect.nameSQL(table.compoundName)} ADD ")
-                    appendForeignKey(this, key)
-                }.build()
-            }
-
-    override fun alterTable(table: TableDefinition, schemas: List<DatabaseSchema.SchemaTable>): List<SQLStatement> {
-        val existTable = schemas.associateBy { it.name.toLowerCase() }
-        val nameSQL = dialect.nameSQL(table.compoundName).toLowerCase()
-        val exist = existTable[nameSQL]
-        return if (exist != null) {
-            table.compoundColumns.mapNotNull { column ->
-                val find = exist.columns().find { column.name.identifier.id.toLowerCase() == it.name.toLowerCase() }
-
-                if (find == null) {
-                    SQLStatementBuilder().apply {
-                        val renameColumnProperty = column.propertyOrNull<RenameColumnProperty>()
-                        if (renameColumnProperty == null) {
-                            append("ALTER TABLE ${dialect.nameSQL(column.compound.compoundName)} ADD COLUMN ")
-                            append(dialect.idSQL(column.name))
-                            append(" ")
-                            columnTypeSQL(this, column)
-                            columnPropertiesSQL(this, column)
-                            println("Add column ${dialect.idSQL(column.name)}")
-                        } else {
-                            append("ALTER TABLE ${dialect.nameSQL(column.compound.compoundName)} RENAME COLUMN " +
-                                    "${dialect.idSQL(Identifier(renameColumnProperty.oldName))} TO ${dialect.idSQL(column.name)}")
-                            println("Rename column ${dialect.idSQL(column.name)}")
-                        }
-                    }
-                } else {
-
-                    println(find.type)
-                    null
-                }
-            }
-            emptyList()
-
-        } else emptyList()
     }
 
     protected open fun appendForeignKey(builder: SQLStatementBuilder, key: ForeignKeyConstraint) = with(builder) {
         append("CONSTRAINT ${dialect.idSQL(key.name)} FOREIGN KEY (")
-        append(key.sources.map { dialect.idSQL(it.name) }.joinToString())
+        append(key.sources.joinToString { dialect.idSQL(it.name) })
         val destinationTable = key.destinations.first().compound
         append(") REFERENCES ${dialect.nameSQL(destinationTable.compoundName)}(")
-        append(key.destinations.map { dialect.idSQL(it.name) }.joinToString())
+        append(key.destinations.joinToString { dialect.idSQL(it.name) })
         append(")")
     }
 
@@ -176,18 +220,6 @@ open class BaseDefinitionSQLDialect(val dialect: SQLDialect) : DefinitionSQLDial
         }
     }
 
-    fun Transaction.constrains(): List<String> {
-        val response = executeStatement(SQLStatement("""
-			|SELECT tc.constraint_name, tc.table_name, kcu.column_name, ccu.table_name AS foreign_table_name, ccu.column_name AS foreign_column_name
-			|FROM information_schema.table_constraints AS tc
-    		|JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name
-    		|JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name
-			|WHERE constraint_type = 'FOREIGN KEY'
-		""".trimMargin().replace("\n", " "), emptyList()))
-
-        return response.toList().map { it["constraint_name"] ?: "" }
-    }
-
     protected open fun columnTypeSQL(builder: SQLStatementBuilder, type: ColumnType): Unit = with(builder) {
         when (type) {
             is CharColumnType -> append("CHAR")
@@ -216,49 +248,14 @@ open class BaseDefinitionSQLDialect(val dialect: SQLDialect) : DefinitionSQLDial
         }
     }
 
-
-//    protected open fun columnType(column: DatabaseSchema.SchemaColumn): ColumnType {
-//        when (column.type) {
-//            is CharColumnType -> append("CHAR")
-//            is LongColumnType -> append("BIGINT")
-//            is IntColumnType -> append("INT")
-//            is DecimalColumnType -> append("DECIMAL(${type.scale}, ${type.precision})")
-//            is EnumColumnType -> append("INT")
-//            is DateColumnType -> append("DATE")
-//            is DateTimeColumnType -> append("DATETIME")
-//            is BinaryColumnType -> append("VARBINARY(${type.length})")
-//            is UUIDColumnType -> append("BINARY(16)")
-//            is BooleanColumnType -> append("BOOLEAN")
-//            is BlobColumnType -> append("BLOB")
-//            is StringColumnType -> {
-//                val sqlType = when (type.length) {
-//                    in 1..255 -> "VARCHAR(${type.length})"
-//                    else -> "TEXT"
-//                }
-//                if (type.collate == null)
-//                    append(sqlType)
-//                else
-//                    append(sqlType + " COLLATE ${type.collate}")
-//            }
-//            is DialectExtension -> type.appendTo(builder, dialect)
-//            else -> error("Column type '$type' is not supported by $this")
-//        }
-//    }
-
-    enum class Types {
-        serial,
-        varchar,
-        bpchar,
-        int4,
-        numeric,
-        int8,
-        date,
-        bool,
-        timestamp,
-        text,
-        bytea,
-        uuid;
+    private fun SQLStatementBuilder.alterTable(table: TableDefinition) {
+        append("ALTER TABLE ${dialect.nameSQL(table.compoundName)} ")
     }
 
-
+    override fun drop(table: TableDefinition): SQLStatement {
+        return SQLStatementBuilder().apply {
+            append("DROP TABLE ")
+            append(dialect.nameSQL(table.compoundName))
+        }.build()
+    }
 }

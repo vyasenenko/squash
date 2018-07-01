@@ -6,6 +6,10 @@ import org.jetbrains.squash.query.*
 import org.jetbrains.squash.statements.*
 
 open class BaseSQLDialect(val name: String) : SQLDialect {
+
+    override val columnTypes:Map<String, ColumnTypeDB>
+        get() = throw RuntimeException("Not found types column for current DB")
+
     override val definition: DefinitionSQLDialect = BaseDefinitionSQLDialect(this)
 
     override fun nameSQL(name: Name): String = when (name) {
