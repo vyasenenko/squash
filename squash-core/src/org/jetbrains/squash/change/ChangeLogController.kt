@@ -19,10 +19,11 @@ import org.jetbrains.squash.statements.values
  */
 class ChangeLogController(val transaction: Transaction) {
 
-    fun executeChangeLog(vararg changeLogs: ChangeLogStatement) {
-
+    init {
         transaction.databaseSchema().create(ChangeLogTable)
+    }
 
+    fun execute(vararg changeLogs: ChangeLogStatement): List<ChangedData> {
         val changes = getAllChanges()
 
         changeLogs.forEach { changeLog ->
@@ -44,9 +45,11 @@ class ChangeLogController(val transaction: Transaction) {
                 }
             }
         }
+
+        return getAllChanges()
     }
 
-    fun getAllChanges() = from(ChangeLogTable)
+    private fun getAllChanges() = from(ChangeLogTable)
             .select(ChangeLogTable.vid, ChangeLogTable.name, ChangeLogTable.query, ChangeLogTable.whenChanged)
             .executeOn(transaction)
             .map {

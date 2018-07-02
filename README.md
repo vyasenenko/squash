@@ -21,6 +21,29 @@ This fork optimized for postgres
 -------------
 Appended functions for append, rename, change type, change size columns 
 
+```$xslt
+    // Alter table queries by default true
+    Squash.alterTable = true
+```
+
+Database migrations
+-------------
+Change log statement example
+```kotlin
+object ExampleChangeLog : ChangeLogStatement(name = "your_custom_name", changing = {
+    this[ "YOUR CUSTOM" ]
+    this[ "QUERIES" ]
+})
+```
+
+```$xslt
+connection.transaction {
+    databaseSchema().changeLogController.execute(ExampleChangeLog)
+    databaseSchema().create(TableDefinitions)
+}
+```
+
+
 Quick Samples
 -------------
 

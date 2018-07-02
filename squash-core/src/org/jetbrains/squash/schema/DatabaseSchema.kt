@@ -9,8 +9,6 @@ import org.jetbrains.squash.dialect.*
  */
 interface DatabaseSchema {
 
-    val alterTable: Boolean
-
     fun tables(): Sequence<SchemaTable>
 
     fun create(tables: List<TableDefinition>)

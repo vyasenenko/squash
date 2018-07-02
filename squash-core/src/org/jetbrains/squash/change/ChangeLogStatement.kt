@@ -2,8 +2,7 @@ package org.jetbrains.squash.change
 
 import org.jetbrains.squash.dialect.SQLStatement
 import org.jetbrains.squash.dialect.SQLStatementBuilder
-import org.jetbrains.squash.expressions.Loggable
-import java.util.*
+import org.jetbrains.squash.util.Loggable
 import java.util.concurrent.atomic.AtomicInteger
 
 /**

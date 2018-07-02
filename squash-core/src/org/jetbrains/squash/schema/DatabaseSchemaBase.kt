@@ -5,10 +5,9 @@ import org.jetbrains.squash.connection.Transaction
 import org.jetbrains.squash.definition.Table
 import org.jetbrains.squash.definition.TableDefinition
 import org.jetbrains.squash.dialect.SQLStatement
+import org.jetbrains.squash.util.Squash
 
 abstract class DatabaseSchemaBase(open val transaction: Transaction) : DatabaseSchema {
-
-    override val alterTable: Boolean = true
 
     override val changeLogController: ChangeLogController
         get() = ChangeLogController(transaction)
@@ -44,8 +43,9 @@ abstract class DatabaseSchemaBase(open val transaction: Transaction) : DatabaseS
         }
         for (table in tables) {
             statements.addAll(definition.foreignKeys(table, constrains))
-            if (alterTable)
+            if (Squash.alterTable) {
                 statements.addAll(definition.alterTable(table, existingTables))
+            }
         }
         return statements
     }

@@ -2,7 +2,7 @@ package org.jetbrains.squash.dialect
 
 import org.jetbrains.squash.connection.Transaction
 import org.jetbrains.squash.definition.*
-import org.jetbrains.squash.expressions.Loggable
+import org.jetbrains.squash.util.Loggable
 import org.jetbrains.squash.results.get
 import org.jetbrains.squash.schema.DatabaseSchema
 

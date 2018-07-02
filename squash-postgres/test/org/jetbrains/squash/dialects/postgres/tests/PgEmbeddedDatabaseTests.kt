@@ -1,13 +1,16 @@
 package org.jetbrains.squash.dialects.postgres.tests
 
-import org.jetbrains.squash.definition.*
-import org.jetbrains.squash.dialects.postgres.*
-import org.jetbrains.squash.tests.*
-import ru.yandex.qatools.embed.postgresql.*
-import java.nio.file.*
-import kotlin.test.*
+import org.jetbrains.squash.definition.ColumnType
+import org.jetbrains.squash.definition.IntColumnType
+import org.jetbrains.squash.definition.LongColumnType
+import org.jetbrains.squash.dialects.postgres.PgConnection
+import org.jetbrains.squash.tests.DatabaseTests
+import ru.yandex.qatools.embed.postgresql.EmbeddedPostgres
+import java.nio.file.Paths
+import kotlin.test.fail
 
-class PgDatabaseTests : DatabaseTests {
+
+class PgEmbeddedDatabaseTests : DatabaseTests {
     override val quote = "\""
     override val blobType = "BYTEA"
     override fun getIdColumnType(columnType: ColumnType): String = when (columnType) {
@@ -19,7 +22,9 @@ class PgDatabaseTests : DatabaseTests {
     override fun primaryKey(name: String, vararg column: String): String = ", CONSTRAINT PK_$name PRIMARY KEY (${column.joinToString()})"
     override fun autoPrimaryKey(table: String, column: String): String = primaryKey(table, column)
 
-    override fun createConnection() = PgConnection.create("localhost:5432/test", "postgres", "12345")
+    override fun createConnection() = PgConnection.create(EmbeddedPostgres()
+            .start(EmbeddedPostgres.cachedRuntimeConfig(Paths.get("target/pg_embedded"))))
+
     override fun createTransaction() = createConnection().createTransaction().apply {
         executeStatement("SET search_path TO pg_temp")
     }

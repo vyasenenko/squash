@@ -1,11 +1,12 @@
 package org.jetbrains.squash.tests
 
+import org.jetbrains.squash.change.ChangeLogController
 import org.jetbrains.squash.change.ChangeLogStatement
 import org.jetbrains.squash.change.ChangedData
 import org.jetbrains.squash.tests.data.TestChangeLog
 import org.jetbrains.squash.tests.data.TestChangeLogAppendQuery
 import org.jetbrains.squash.tests.data.TestChangeLogIllegal
-import kotlin.test.AfterTest
+import org.jetbrains.squash.tests.data.TestChangeLogNotValid
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -17,53 +18,73 @@ import kotlin.test.assertNotNull
  */
 abstract class ChangeLogTest : DatabaseTests {
 
-    @AfterTest
-    fun after() = withTransaction {
-        databaseSchema().changeLogController.dropChangeLogTable()
-    }
-
     @Test
     fun shouldChangeLogExecuteAndWriteChangesInDb(): Unit = withTransaction {
         val sut = databaseSchema().changeLogController
 
-        fun allExecuted(expectedSize: Int) = sut.getAllChanges().apply {
-            assertEquals(expectedSize, size)
-        }
+        val checker = CheckQuery(this)
 
-        sut.executeChangeLog(TestChangeLog) // Execute change log
+        sut.executeAndCheck(TestChangeLog, 3) // Execute change log
 
-        allExecuted(3)
+        assertEquals(8, checker.countQueries)
+        // [2] query selected all changelog before and after, [3] execute changes, [3] insert changes
 
-        sut.executeChangeLog(TestChangeLog) // Again execute (expect not change size)
+        val allChangeLog = sut.executeAndCheck(TestChangeLog, 3) // Again execute (expect not change size)
 
-        checkResult(TestChangeLog.list, allExecuted(3))
+        assertEquals(10, checker.countQueries)
+        // append [2] query selected all changelog before and after
+
+        checkResult(TestChangeLog.list, allChangeLog)
     }
 
     @Test
     fun shouldChangeLogExecuteAndAppendNewQuery(): Unit = withTransaction {
         val sut = databaseSchema().changeLogController
 
-        fun allExecuted(expectedSize: Int) = sut.getAllChanges().apply {
-            assertEquals(expectedSize, size)
-        }
+        val checker = CheckQuery(this)
 
-        sut.executeChangeLog(TestChangeLog) // Execute change log
+        sut.executeAndCheck(TestChangeLog, 3) // Execute change log
 
-        allExecuted(3)
+        assertEquals(8, checker.countQueries)
+        // [2] query selected all changelog before and after, [3] execute changes, [3] insert changes
 
-        sut.executeChangeLog(TestChangeLogAppendQuery) // Append new query
+        val allChangeLog = sut.executeAndCheck(TestChangeLogAppendQuery, 4) // Append new query
 
-        checkResult(TestChangeLog.list, allExecuted(4))
+        assertEquals(12, checker.countQueries)
+        // append [2] query selected all changelog before and after, [1] execute changes, [1] insert changes
+
+        checkResult(TestChangeLog.list, allChangeLog)
     }
 
     @Test(expected = IllegalStateException::class)
     fun expectedErrorChangeQuery(): Unit = withTransaction {
         val sut = databaseSchema().changeLogController
-        sut.executeChangeLog(TestChangeLog)
-        sut.executeChangeLog(TestChangeLogIllegal) // Try execute not equals query
+
+        val checker = CheckQuery(this)
+
+        sut.execute(TestChangeLog)
+
+        assertEquals(8, checker.countQueries)
+        // [2] query selected all changelog before and after, [3] execute changes, [3] insert changes
+
+        sut.execute(TestChangeLogIllegal) // Try execute not equals query
     }
 
-    private fun checkResult(list: MutableList<ChangeLogStatement.ChangingExecutedStatement>, allExecuted: List<ChangedData>) {
+    @Test(expected = Exception::class)
+    fun shouldNotValidExecutedQuery(): Unit = withTransaction {
+        val sut = databaseSchema().changeLogController
+
+        sut.execute(TestChangeLogNotValid)
+
+        assert(true)
+    }
+
+    private fun ChangeLogController.executeAndCheck(statement: ChangeLogStatement, expectedSize: Int) =
+            execute(statement).apply {
+                assertEquals(expectedSize, size)
+            }
+
+    private fun checkResult(list: List<ChangeLogStatement.ChangingExecutedStatement>, allExecuted: List<ChangedData>) {
         list.forEach { executeStatement ->
             assertNotNull(allExecuted.find {
                 it.vid == executeStatement.vid

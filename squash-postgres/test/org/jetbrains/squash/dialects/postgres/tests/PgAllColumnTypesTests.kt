@@ -3,7 +3,7 @@ package org.jetbrains.squash.dialects.postgres.tests
 import org.jetbrains.squash.definition.*
 import org.jetbrains.squash.tests.*
 
-class PgAllColumnTypesTests : AllColumnTypesTests(), DatabaseTests by PgDatabaseTests() {
+class PgAllColumnTypesTests : AllColumnTypesTests(), DatabaseTests by PgEmbeddedDatabaseTests() {
     override val allColumnsTableSQL: String
         get() = "CREATE TABLE IF NOT EXISTS AllColumnTypes (" +
                 "id ${getIdColumnType(IntColumnType)}, " +

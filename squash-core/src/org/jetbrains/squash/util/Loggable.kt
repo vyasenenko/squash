@@ -1,4 +1,4 @@
-package org.jetbrains.squash.expressions
+package org.jetbrains.squash.util
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
