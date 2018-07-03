@@ -13,7 +13,7 @@ import java.util.*
  */
 fun <V> TableDefinition.reference(column: ColumnDefinition<V>, name: String? = null): ReferenceColumn<V> {
     val referenceName = name ?: column.name.referenceName()
-    val reference = addColumn(ReferenceColumn<V>(this, Identifier(referenceName), column))
+    val reference = addColumn(ReferenceColumn(this, Identifier(referenceName), column))
     constraints.add(ForeignKeyConstraint(Identifier("FK_${compoundName.id}_$referenceName"), listOf(reference), listOf(column)))
     return reference
 }

@@ -3,13 +3,11 @@ package org.jetbrains.squash.tests
 import org.jetbrains.squash.change.ChangeLogController
 import org.jetbrains.squash.change.ChangeLogStatement
 import org.jetbrains.squash.change.ChangedData
-import org.jetbrains.squash.tests.data.TestChangeLog
-import org.jetbrains.squash.tests.data.TestChangeLogAppendQuery
-import org.jetbrains.squash.tests.data.TestChangeLogIllegal
-import org.jetbrains.squash.tests.data.TestChangeLogNotValid
+import org.jetbrains.squash.tests.data.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 /**
  * Check change log database system.
@@ -19,62 +17,55 @@ import kotlin.test.assertNotNull
 abstract class ChangeLogTest : DatabaseTests {
 
     @Test
-    fun shouldChangeLogExecuteAndWriteChangesInDb(): Unit = withTransaction {
-        val sut = databaseSchema().changeLogController
+    fun shouldChangeLogExecuteAndWriteChangesInDb() = withChangeLog { SUT ->
 
         val checker = CheckQuery(this)
 
-        sut.executeAndCheck(TestChangeLog, 3) // Execute change log
+        SUT.executeAndCheck(TestChangeLog, 3) // Execute change log
 
-        assertEquals(8, checker.countQueries)
-        // [2] query selected all changelog before and after, [3] execute changes, [3] insert changes
+        checker.assert(8, "[1,8] query selected all changelog", "[2,4,6] execute changes", "[3,5,7] insert changes")
 
-        val allChangeLog = sut.executeAndCheck(TestChangeLog, 3) // Again execute (expect not change size)
+        val allChangeLog = SUT.executeAndCheck(TestChangeLog, 3) // Again execute (expect not change size)
 
-        assertEquals(10, checker.countQueries)
-        // append [2] query selected all changelog before and after
+        checker.assert(10, "[9, 10] query selected all changelog")
 
         checkResult(TestChangeLog.list, allChangeLog)
     }
 
     @Test
-    fun shouldChangeLogExecuteAndAppendNewQuery(): Unit = withTransaction {
-        val sut = databaseSchema().changeLogController
+    fun shouldChangeLogExecuteAndAppendNewQuery() = withChangeLog { SUT ->
 
         val checker = CheckQuery(this)
 
-        sut.executeAndCheck(TestChangeLog, 3) // Execute change log
+        SUT.executeAndCheck(TestChangeLog, 3) // Execute change log
 
-        assertEquals(8, checker.countQueries)
-        // [2] query selected all changelog before and after, [3] execute changes, [3] insert changes
+        checker.assert(8, "[1, 8] query selected all changelog", "[2, 4, 6] execute changes", "[3, 5, 7] insert changes")
 
-        val allChangeLog = sut.executeAndCheck(TestChangeLogAppendQuery, 4) // Append new query
+        val allChangeLog = SUT.executeAndCheck(TestChangeLogAppendQuery, 4) // Append new query
 
-        assertEquals(12, checker.countQueries)
-        // append [2] query selected all changelog before and after, [1] execute changes, [1] insert changes
+        checker.assert(12, "[9, 12] query selected all changelog", "[10] execute changes", "[11] insert changes")
 
         checkResult(TestChangeLog.list, allChangeLog)
     }
 
     @Test(expected = IllegalStateException::class)
-    fun expectedErrorChangeQuery(): Unit = withTransaction {
-        val sut = databaseSchema().changeLogController
+    fun expectedErrorChangeQuery() = withChangeLog { SUT ->
 
         val checker = CheckQuery(this)
 
-        sut.execute(TestChangeLog)
+        SUT.execute(TestChangeLog)
 
-        assertEquals(8, checker.countQueries)
-        // [2] query selected all changelog before and after, [3] execute changes, [3] insert changes
+        checker.assert(8, "[1, 8] query selected all changelog", "[2, 4, 6] execute changes", "[3, 5, 7] insert changes")
 
-        sut.execute(TestChangeLogIllegal) // Try execute not equals query
+        val list = SUT.execute(TestChangeLogIllegal) // Try execute not equals query
+
+        assertTrue(list.isEmpty())
     }
 
     @Test(expected = Exception::class)
-    fun shouldNotValidExecutedQuery(): Unit = withTransaction {
-        val sut = databaseSchema().changeLogController
+    fun shouldNotValidExecutedQuery() = withChangeLog { SUT ->
 
-        sut.execute(TestChangeLogNotValid)
+        SUT.execute(TestChangeLogNotValid)
 
         assert(true)
     }

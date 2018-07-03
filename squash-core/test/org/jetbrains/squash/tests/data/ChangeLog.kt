@@ -1,6 +1,9 @@
 package org.jetbrains.squash.tests.data
 
+import org.jetbrains.squash.change.ChangeLogController
 import org.jetbrains.squash.change.ChangeLogStatement
+import org.jetbrains.squash.connection.Transaction
+import org.jetbrains.squash.tests.DatabaseTests
 
 private const val name = "test_change_log"
 
@@ -26,3 +29,7 @@ object TestChangeLogIllegal : ChangeLogStatement(name, {
 object TestChangeLogNotValid : ChangeLogStatement(changing =  {
     this["NOT VALID QUERY"]
 })
+
+fun <R> DatabaseTests.withChangeLog(statement: Transaction.(sut: ChangeLogController) -> R) :R = this.withTransaction {
+    statement(databaseSchema().changeLogController)
+}

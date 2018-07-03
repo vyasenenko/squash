@@ -42,10 +42,10 @@ abstract class DatabaseSchemaBase(open val transaction: Transaction) : DatabaseS
             statements.addAll(tableDefinition)
         }
         for (table in tables) {
-            statements.addAll(definition.foreignKeys(table, constrains))
             if (Squash.alterTable) {
                 statements.addAll(definition.alterTable(table, existingTables))
             }
+            statements.addAll(definition.foreignKeys(table, constrains))
         }
         return statements
     }
