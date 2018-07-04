@@ -19,6 +19,8 @@ interface DatabaseSchema {
 
     data class DatabaseSchemaValidationItem(val message: String)
 
+    fun log(tables: List<TableDefinition>)
+
     fun validate(tables: List<org.jetbrains.squash.definition.Table>): List<DatabaseSchemaValidationItem>
 
     interface SchemaTable {

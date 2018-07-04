@@ -20,7 +20,7 @@ open class JDBCDatabaseSchema(final override val transaction: JDBCTransaction) :
                        override val nullable: Boolean,
                        override val type: String,
                        override val size: Int?) : DatabaseSchema.SchemaColumn {
-        override fun toString(): String = "[JDBC] Column: $name:$type${if (nullable) "?" else ""} ($size)"
+        override fun toString(): String = "$name:$type${if (nullable) "?" else ""} ($size)"
     }
 
     class SchemaTable(override val name: String, private val schema: JDBCDatabaseSchema) : DatabaseSchema.SchemaTable {

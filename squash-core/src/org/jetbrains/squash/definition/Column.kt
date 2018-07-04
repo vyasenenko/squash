@@ -36,13 +36,13 @@ inline fun <reified T : ColumnProperty> Column<*>.propertyOrNull(): T? {
 }
 
 open class ColumnDefinition<out V>(final override val compound: TableDefinition, name: Identifier, override val type: ColumnType) : Column<V> {
-    override fun toString(): String = "$name: $type"
+    override fun toString(): String = "$name: $type${properties.joinToString("")}"
     override val properties = mutableListOf<ColumnProperty>()
     override val name = QualifiedIdentifier<Name>(compound.compoundName, name)
 }
 
 class ReferenceColumn<out V>(compound: TableDefinition, name: Identifier, val reference: Column<V>) : ColumnDefinition<V>(compound, name, ReferenceColumnType(reference.type)) {
-    override fun toString(): String = "&$reference"
+    override fun toString(): String = "&${name.id}\uD83D\uDD17$reference"
 }
 
 fun <C : ColumnDefinition<LocalDateTime>> C.now(): C = addProperty(NowTimeProperty())
