@@ -1,5 +1,6 @@
 package org.jetbrains.squash.dialects.postgres.tests
 
+import org.jetbrains.squash.connection.DatabaseConnection
 import org.jetbrains.squash.definition.ColumnType
 import org.jetbrains.squash.definition.IntColumnType
 import org.jetbrains.squash.definition.LongColumnType
@@ -22,10 +23,15 @@ class PgEmbeddedDatabaseTests : DatabaseTests {
     override fun primaryKey(name: String, vararg column: String): String = ", CONSTRAINT PK_$name PRIMARY KEY (${column.joinToString()})"
     override fun autoPrimaryKey(table: String, column: String): String = primaryKey(table, column)
 
-    override fun createConnection() = PgConnection.create(EmbeddedPostgres()
-            .start(EmbeddedPostgres.cachedRuntimeConfig(Paths.get("target/pg_embedded"))))
+    override fun createConnection(): DatabaseConnection {
+        return PgConnection.create(urlPg)
+    }
 
     override fun createTransaction() = createConnection().createTransaction().apply {
         executeStatement("SET search_path TO pg_temp")
+    }
+
+    companion object {
+        private val urlPg = EmbeddedPostgres().start(EmbeddedPostgres.cachedRuntimeConfig(Paths.get("target/pg_embedded")))
     }
 }
