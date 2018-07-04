@@ -1,5 +1,6 @@
 package org.jetbrains.squash.change
 
+import org.jetbrains.squash.definition.TableDefinition
 import org.jetbrains.squash.dialect.SQLStatement
 import org.jetbrains.squash.dialect.SQLStatementBuilder
 import org.jetbrains.squash.util.Loggable
@@ -30,14 +31,13 @@ abstract class ChangeLogStatement(private val name: String? = null, changing: Ch
         changing()
     }
 
-    operator fun get(query: String): ChangeLogStatement {
+    operator fun get(query: String) {
         list.add(ChangingExecutedStatement(count.incrementAndGet(), query))
-        return this
     }
 
-    operator fun get(statement: SQLStatement): ChangeLogStatement = get(statement.sql)
+    operator fun get(statement: SQLStatement) = get(statement.sql)
 
-    operator fun get(statement: SQLStatementBuilder): ChangeLogStatement = get(statement.build())
+    operator fun get(statement: SQLStatementBuilder) = get(statement.build())
 
     data class ChangingExecutedStatement(val vid: Int, val query: String) {
         override fun toString(): String = "[$vid] ($query)"

@@ -49,7 +49,7 @@ class ChangeLogController(val transaction: Transaction) {
         return getAllChanges()
     }
 
-    private fun getAllChanges() = from(ChangeLogTable).select().executeOn(transaction).map {
+    private fun getAllChanges() = from(ChangeLogTable).executeOn(transaction).map {
         ChangedData(it[ChangeLogTable.vid], it[ChangeLogTable.name], it[ChangeLogTable.query], it[ChangeLogTable.whenChanged])
     }.toList()
 
