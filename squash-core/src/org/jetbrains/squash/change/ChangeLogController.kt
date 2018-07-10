@@ -3,7 +3,6 @@ package org.jetbrains.squash.change
 import org.jetbrains.squash.connection.Transaction
 import org.jetbrains.squash.expressions.eq
 import org.jetbrains.squash.query.from
-import org.jetbrains.squash.query.select
 import org.jetbrains.squash.query.where
 import org.jetbrains.squash.results.get
 import org.jetbrains.squash.schema.create
@@ -28,6 +27,7 @@ class ChangeLogController(val transaction: Transaction) {
 
         changeLogs.forEach { changeLog ->
 
+            changeLog.list.sortBy { it.vid }
             changeLog.list.forEach { changeStatement ->
                 val existChange = changes.find { it.vid == changeStatement.vid && it.name == changeLog.nameChangeLog }
                 when {

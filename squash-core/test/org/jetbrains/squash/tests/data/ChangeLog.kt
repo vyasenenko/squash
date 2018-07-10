@@ -8,9 +8,9 @@ import org.jetbrains.squash.tests.DatabaseTests
 private const val name = "test_change_log"
 
 object TestChangeLog : ChangeLogStatement(name, {
-    this["CREATE TABLE test_change_log_table (id SERIAL NOT NULL CONSTRAINT pk_test_change_log_table PRIMARY KEY, name VARCHAR(20) NOT NULL)"]
-    this["ALTER TABLE test_change_log_table ADD COLUMN date TIMESTAMP"]
-    this["DROP TABLE test_change_log_table"]
+    3["DROP TABLE test_change_log_table"]
+    1["CREATE TABLE test_change_log_table (id SERIAL NOT NULL CONSTRAINT pk_test_change_log_table PRIMARY KEY, name VARCHAR(20) NOT NULL)"]
+    2["ALTER TABLE test_change_log_table ADD COLUMN date TIMESTAMP"]
 })
 
 object TestChangeLogAppendQuery : ChangeLogStatement(name, {
