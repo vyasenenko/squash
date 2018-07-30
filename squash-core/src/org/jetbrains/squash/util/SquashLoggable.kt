@@ -9,7 +9,7 @@ import org.slf4j.event.Level
  * *
  * @author Vitaliy Yasenenko.
  */
-interface Loggable {
+interface SquashLoggable {
 
     val log: Logger
         get() = LoggerFactory.getLogger(this::class.java)

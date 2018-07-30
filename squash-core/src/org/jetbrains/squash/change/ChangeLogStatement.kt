@@ -2,7 +2,7 @@ package org.jetbrains.squash.change
 
 import org.jetbrains.squash.dialect.SQLStatement
 import org.jetbrains.squash.dialect.SQLStatementBuilder
-import org.jetbrains.squash.util.Loggable
+import org.jetbrains.squash.util.SquashLoggable
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger
  *
  * @author Vitaliy Yasenenko.
  */
-abstract class ChangeLogStatement(private val name: String? = null, changing: ChangeLogStatement.() -> Unit) : Loggable {
+abstract class ChangeLogStatement(private val name: String? = null, changing: ChangeLogStatement.() -> Unit) : SquashLoggable {
 
     private val count: AtomicInteger = AtomicInteger(0)
 

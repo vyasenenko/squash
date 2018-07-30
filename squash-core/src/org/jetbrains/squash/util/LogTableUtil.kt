@@ -12,7 +12,7 @@ fun DatabaseSchemaBase.logTable(tables: List<TableDefinition>) {
     transaction.connection.dialect.definition.constrains(transaction)
     val tablesFromSchema = transaction.databaseSchema().tables()
 
-    (if (tablesFromSchema.any()) "\u001B[1;34m[DATABASE SCHEMA]\u001B[0m\n" else "\u001B[1;31mYou don't have any tables!!\u001B[0m").log()
+    (if (tablesFromSchema.any()) "\u001B[1;34m[DATABASE SCHEMA]\u001B[0m" else "\u001B[1;31mYou don't have any tables!!\u001B[0m").log()
     tablesFromSchema.forEach { exist ->
 
         "Table [${exist.name.toUpperCase()}]".log()

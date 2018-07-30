@@ -4,9 +4,9 @@ import org.jetbrains.squash.connection.Transaction
 import org.jetbrains.squash.definition.*
 import org.jetbrains.squash.results.get
 import org.jetbrains.squash.schema.DatabaseSchema
-import org.jetbrains.squash.util.Loggable
+import org.jetbrains.squash.util.SquashLoggable
 
-open class BaseDefinitionSQLDialect(val dialect: SQLDialect) : DefinitionSQLDialect, Loggable {
+open class BaseDefinitionSQLDialect(val dialect: SQLDialect) : DefinitionSQLDialect, SquashLoggable {
 
     override fun tableSQL(table: TableDefinition): List<SQLStatement> {
         val tableSQL = SQLStatementBuilder().apply {
@@ -238,7 +238,11 @@ open class BaseDefinitionSQLDialect(val dialect: SQLDialect) : DefinitionSQLDial
     open fun columnDefaultProperty(builder: SQLStatementBuilder, property: DefaultValueProperty<*>?) {
         if (property != null) {
             builder.append(" DEFAULT ")
-            dialect.appendLiteralSQL(builder, property.value)
+            if (property.value != null) {
+                builder.append("${property.value} ")
+            } else {
+                builder.append("NULL ")
+            }
         }
     }
 

@@ -4,14 +4,14 @@ import org.jetbrains.squash.connection.Transaction
 import org.jetbrains.squash.connection.invoke
 import org.jetbrains.squash.definition.Table
 import org.jetbrains.squash.dialect.SQLStatement
-import org.jetbrains.squash.util.Loggable
+import org.jetbrains.squash.util.SquashLoggable
 import kotlin.test.assertEquals
 
 fun <T : Table> Transaction.exists(table: T): Boolean {
     return databaseSchema().tables().any { String.CASE_INSENSITIVE_ORDER.compare(it.name, table.compoundName.id) == 0 }
 }
 
-class CheckQuery(transaction: Transaction): Loggable {
+class CheckQuery(transaction: Transaction): SquashLoggable {
 
     private val _queries: MutableList<SQLStatement> = mutableListOf()
 

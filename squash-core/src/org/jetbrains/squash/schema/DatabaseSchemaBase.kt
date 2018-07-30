@@ -5,11 +5,11 @@ import org.jetbrains.squash.connection.Transaction
 import org.jetbrains.squash.definition.Table
 import org.jetbrains.squash.definition.TableDefinition
 import org.jetbrains.squash.dialect.SQLStatement
-import org.jetbrains.squash.util.Loggable
+import org.jetbrains.squash.util.SquashLoggable
 import org.jetbrains.squash.util.Squash
 import org.jetbrains.squash.util.logTable
 
-abstract class DatabaseSchemaBase(open val transaction: Transaction) : DatabaseSchema, Loggable {
+abstract class DatabaseSchemaBase(open val transaction: Transaction) : DatabaseSchema, SquashLoggable {
 
     override val changeLogController: ChangeLogController
         get() = ChangeLogController(transaction)
