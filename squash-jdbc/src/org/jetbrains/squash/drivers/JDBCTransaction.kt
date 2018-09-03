@@ -40,6 +40,20 @@ open class JDBCTransaction(override val connection: JDBCConnection) : Transactio
                     return columnValue as T
                 }
             }
+            is ConflictStatement<*, *> -> {
+                val keyColumn = statement.insertValuesStatement.generatedKeyColumn
+                if (keyColumn == null) {
+                    return Unit as T
+                } else {
+                    val response = JDBCResponse(connection.conversion, jdbcStatement.generatedKeys)
+                    val rows = response.rows
+                    if (rows.empty)
+                        return Unit as T
+                    val generatedColumn = response.columns.single()
+                    val columnValue = rows.single().columnValue(keyColumn.type.runtimeType, generatedColumn.columnIndex - 1)
+                    return columnValue as T
+                }
+            }
             is InsertQueryStatement<*> -> {
                 // TODO: support generating sequence for fetch keys
                 return emptySequence<Nothing>() as T

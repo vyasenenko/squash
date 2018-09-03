@@ -20,7 +20,7 @@ Squash is a data access and manipulation DSL library for relational databases.
 
 This fork optimized for postgres
 -------------
-Appended functions for append, rename, change type, change size columns 
+Appended functions for append, rename
 
 ```kotlin
 // Alter table queries by default true
@@ -44,7 +44,28 @@ connection.transaction {
 }
 ```
 
+Added UPSERT
+-------------
+Insert or update (on conflict)
+```kotlin
+object Names : TableDefinition("Names") {
+    val firstName = varchar("firstname", 10).primaryKey()
+    val lastName = varchar("lastname", 10)
+    val middleName = varchar("middleName", 10)
+}
 
+val updates = insertInto(Names).values {
+    it[firstName] = "Foo"
+    it[lastName] = "Bar2"
+    it[middleName] = "Or2"
+}.onConflict(Names.firstName).update {
+    it[lastName]
+    it[middleName]
+}.execute()
+
+```
+
+ 
 Quick Samples
 -------------
 

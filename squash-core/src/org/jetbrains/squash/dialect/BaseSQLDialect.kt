@@ -328,6 +328,7 @@ open class BaseSQLDialect(val name: String) : SQLDialect {
     override fun <T> statementSQL(statement: Statement<T>): SQLStatement = when (statement) {
         is QueryStatement -> queryStatementSQL(statement)
         is InsertValuesStatement<*, *> -> insertValuesStatementSQL(statement)
+        is ConflictStatement<*, *> -> conflictStatementSQL(statement)
         is InsertQueryStatement<*> -> insertQueryStatementSQL(statement)
         is UpdateQueryStatement<*> -> updateQueryStatementSQL(statement)
         is DeleteQueryStatement<*> -> deleteQueryStatementSQL(statement)
@@ -385,6 +386,41 @@ open class BaseSQLDialect(val name: String) : SQLDialect {
             appendLiteralSQL(this, value.value)
         }
         append(")")
+    }.build()
+
+    open fun conflictStatementSQL(statement: ConflictStatement<*, *>): SQLStatement = SQLStatementBuilder().apply {
+        append("INSERT INTO ")
+        append(nameSQL(statement.insertValuesStatement.table.compoundName))
+        append(" (")
+        val values = statement.insertValuesStatement.values.entries.toList() // fix order
+        values.forEachIndexed { index, value ->
+            if (index > 0)
+                append(", ")
+            append(idSQL(value.key.name))
+        }
+        append(") VALUES (")
+        values.forEachIndexed { index, value ->
+            if (index > 0)
+                append(", ")
+            appendLiteralSQL(this, value.value)
+        }
+        append(")")
+        append(" ON CONFLICT (")
+        append(statement.conflictColumns.joinToString { idSQL(it.name) })
+        append(") DO ")
+        if (statement.updateColumn.isEmpty()) {
+            append("NOTHING")
+        } else {
+            append("UPDATE SET ")
+            statement.updateColumn.forEachIndexed { index, value ->
+                if (index > 0)
+                    append(", ")
+                append(idSQL(value.name))
+                append(" = excluded.")
+                append(idSQL(value.name))
+            }
+        }
+        append(";")
     }.build()
 
     override fun toString(): String = "SQLDialect '$name'"
