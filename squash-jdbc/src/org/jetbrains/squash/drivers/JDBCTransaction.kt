@@ -85,10 +85,11 @@ open class JDBCTransaction(override val connection: JDBCConnection) : Transactio
 
 	override fun <T> executeStatement(statement: Statement<T>): T {
 		val statementSQL = connection.dialect.statementSQL(statement)
-		val returnColumn: Column<*>? = if (statement is InsertValuesStatement<*, *> && statement is ConflictStatement<*, *>)
-			statement.generatedKeyColumn
-		else
-			null
+		val returnColumn: Column<*>? = when (statement) {
+			is InsertValuesStatement<*, *> -> statement.generatedKeyColumn
+			is ConflictStatement<*, *> -> statement.insertValuesStatement.generatedKeyColumn
+			else -> null
+		}
 		connection.monitor.beforeStatement(this, statementSQL)
 		val preparedStatement = jdbcTransaction.prepareStatement(statementSQL, returnColumn)
 		preparedStatement.execute()
