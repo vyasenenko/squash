@@ -28,6 +28,7 @@ import org.jetbrains.squash.query.orderByDescending
 import org.jetbrains.squash.query.query
 import org.jetbrains.squash.query.select
 import org.jetbrains.squash.query.where
+import org.jetbrains.squash.results.ResultRow
 import org.jetbrains.squash.results.get
 import org.jetbrains.squash.statements.insertInto
 import org.jetbrains.squash.statements.onConflict
@@ -317,7 +318,8 @@ abstract class QueryTests : DatabaseTests {
 				"SELECT * FROM ${quote}Map${quote} INNER JOIN ${quote}Names${quote} ON ${quote}Map${quote}.name_ref = ${quote}Names${quote}.name INNER JOIN Numbers ON ${quote}Map${quote}.id_ref = Numbers.id"
 			}
 
-			val rows = query.execute().toList()
+			val rows: List<ResultRow> = query.execute().toList()
+
 			assertEquals(1, rows.size)
 			assertEquals(2, rows[0][Numbers.id])
 			assertEquals("Foo", rows[0][Names.name])

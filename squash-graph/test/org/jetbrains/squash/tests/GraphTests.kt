@@ -24,13 +24,11 @@ abstract class GraphTests : DatabaseTests {
             }
         }
 
-/*
         println("--- City:")
         println(cityBinding)
 
         println("--- Citizen:")
         println(citizenBinding)
-*/
 
         val query = from(Citizens).where { Citizens.id eq "andrey" }
         var queries = 0
